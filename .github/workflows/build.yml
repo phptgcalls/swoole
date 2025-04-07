@@ -120,6 +120,9 @@ jobs:
           path: build/output/
 
   publish:
+    permissions:
+      contents: write
+      discussions: write
     if: github.event.inputs.publish == 'true'
     needs: build
     runs-on: ubuntu-latest
