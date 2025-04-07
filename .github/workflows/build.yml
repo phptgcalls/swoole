@@ -1,5 +1,4 @@
 name: Build And Publish
-
 on:
   workflow_dispatch:
     inputs:
@@ -48,7 +47,6 @@ on:
         required: false
         default: true
         type: boolean
-
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -71,7 +69,6 @@ jobs:
           if [[ "${{ github.event.inputs.windows-build }}" == "true" ]]; then
             build_list+=",{\"os\":\"windows-2022\",\"shared_name\":\"windows-x86_64\"}"
           fi
-          # Add more platforms as needed, e.g. Android, with its proper configuration.
           if [[ -n "$build_list" ]]; then
             build_list="${build_list:1}"
           fi
@@ -86,13 +83,17 @@ jobs:
       matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@2.32.0
+        with:
+          php-version: '8.3'
 
       - name: Set up environment
         run: |
           echo "Running on ${{ matrix.os }} with shared target name: ${{ matrix.shared_name }}"
 
-      # Build shared libraries if enabled
       - name: Build shared libraries
         if: ${{ github.event.inputs.build-shared-libs == 'true' }}
         run: |
@@ -100,7 +101,6 @@ jobs:
           chmod +x ./scripts/build-shared.sh
           ./scripts/build-shared.sh "${{ matrix.shared_name }}"
       
-      # Build static libraries if enabled
       - name: Build static libraries
         if: ${{ github.event.inputs.build-static-libs == 'true' }}
         run: |
@@ -108,7 +108,6 @@ jobs:
           chmod +x ./scripts/build-static.sh
           ./scripts/build-static.sh "${{ matrix.shared_name }}"
 
-      # Build wheels if enabled
       - name: Build wheels
         if: ${{ github.event.inputs.build-wheels == 'true' }}
         run: |
@@ -116,13 +115,12 @@ jobs:
           chmod +x ./scripts/build-wheels.sh
           ./scripts/build-wheels.sh "${{ matrix.shared_name }}"
 
-      # (Optional) Verify Swoole using docker on Linux
       - name: Verify Swoole Installation (Linux only)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: docker run --rm phpswoole/swoole "php --ri swoole"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.shared_name }}
           path: build/output/
@@ -132,20 +130,20 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           path: build_artifacts
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
+      - name: Create Release
+        uses: softprops/action-gh-release@v2.2.1
         with:
           tag_name: ${{ github.ref }}
-          name: Release ${{ github.ref }}
-          body: "Automated release of Swoole shared library version ${{ github.ref }}."
-
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
-        with:
           files: build_artifacts/**/*
+
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
