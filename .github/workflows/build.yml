@@ -17,11 +17,6 @@ on:
         required: false
         default: false
         type: boolean
-      build-wheels:
-        description: 'Build wheels'
-        required: false
-        default: false
-        type: boolean
       linux-build:
         description: 'Build for Linux'
         required: false
@@ -39,11 +34,6 @@ on:
         type: boolean
       windows-build:
         description: 'Build for Windows'
-        required: false
-        default: false
-        type: boolean
-      android-build:
-        description: 'Build for Android'
         required: false
         default: false
         type: boolean
@@ -69,7 +59,7 @@ jobs:
             build_list+=",{\"os\":\"arm64-server\",\"shared_name\":\"linux-arm64\"}"
           fi
           if [[ "${{ github.event.inputs.macos-build }}" == "true" ]]; then
-            build_list+=",{\"os\":\"macos-15\",\"shared_name\":\"macos-arm64\"}"
+            build_list+=",{\"os\":\"macos-latest\",\"shared_name\":\"macos-arm64\"}"
           fi
           if [[ "${{ github.event.inputs.windows-build }}" == "true" ]]; then
             build_list+=",{\"os\":\"windows-2022\",\"shared_name\":\"windows-x86_64\"}"
@@ -99,13 +89,21 @@ jobs:
         run: |
           echo "Running on ${{ matrix.os }} with shared target name: ${{ matrix.shared_name }}"
 
-      - name: Install and configure PCRE2 on macOS
+      - name: Install PCRE2 on macOS
+        if: runner.os == 'macOS'
+        run: brew install pcre2
+
+      - name: Set environment variables for macOS
+        if: runner.os == 'macOS'
+        run: echo "CFLAGS=-I/opt/homebrew/include" >> $GITHUB_ENV
+
+      - name: Ensure PCRE2 headers are available for PHP on macOS
         if: runner.os == 'macOS'
         run: |
           brew install pcre2
-          ln -s /opt/homebrew/opt/pcre2/include/pcre2.h $(brew --prefix php)/include/php/ext/pcre/pcre2.h
-        env:
-          CFLAGS: "-I/opt/homebrew/include"
+          mkdir -p $(php-config --include-dir)/ext/pcre
+          ln -s /opt/homebrew/opt/pcre2/include/pcre2.h $(php-config --include-dir)/ext/pcre/pcre2.h
+
 
       - name: Build shared libraries
         if: ${{ github.event.inputs.build-shared-libs == 'true' }}
