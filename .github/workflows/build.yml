@@ -105,8 +105,6 @@ jobs:
           echo "Building shared libraries for ${{ matrix.shared_name }}..."
           chmod +x ./scripts/build-shared.sh
           ./scripts/build-shared.sh
-
-
       
       - name: Build static libraries
         if: ${{ github.event.inputs.build-static-libs == 'true' }}
@@ -114,17 +112,6 @@ jobs:
           echo "Building static libraries for ${{ matrix.shared_name }}..."
           chmod +x ./scripts/build-static.sh
           ./scripts/build-static.sh "${{ matrix.shared_name }}"
-
-      - name: Build wheels
-        if: ${{ github.event.inputs.build-wheels == 'true' }}
-        run: |
-          echo "Building wheels for ${{ matrix.shared_name }}..."
-          chmod +x ./scripts/build-wheels.sh
-          ./scripts/build-wheels.sh "${{ matrix.shared_name }}"
-
-      - name: Verify Swoole Installation (Linux only)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: docker run --rm phpswoole/swoole "php --ri swoole"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -150,7 +137,6 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.version }}
           files: build_artifacts/**/*
-
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
