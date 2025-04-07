@@ -3,36 +3,37 @@ set -e
 
 echo "Starting Swoole build process for Linux..."
 
-# Check for required PHP build tools
-if ! command -v phpize &>/dev/null; then
-  echo "Error: phpize is not installed. Please install the PHP development package."
-  exit 1
+# Clone Swoole source if not present
+if [ ! -d "swoole-src" ]; then
+  echo "Cloning Swoole source repository..."
+  git clone --depth=1 https://github.com/swoole/swoole-src.git
 fi
 
-if ! command -v php-config &>/dev/null; then
-  echo "Error: php-config is not installed. Please install the PHP development package."
-  exit 1
-fi
+# Enter the Swoole source directory
+cd swoole-src
 
-# Prepare the build environment (assumes you are in the Swoole source directory)
+# Run phpize in the top-level Swoole directory (which contains config.m4)
 echo "Running phpize..."
 phpize
 
 echo "Configuring the build..."
-# You can pass additional configure flags if needed (e.g. --enable-swoole, --with-ssl, etc.)
+# You can pass additional configuration flags as needed
 ./configure --enable-swoole
 
 echo "Compiling the Swoole extension..."
 make -j$(nproc)
 
-# Ensure output directory exists
+# Return to repository root
+cd ..
+
+# Create output directory if it doesn't exist
 mkdir -p build/output
 
-# Check if the shared library was produced and copy it to build/output
-if [ -f modules/swoole.so ]; then
-  cp modules/swoole.so build/output/
+# Check and copy the built shared library to the output directory
+if [ -f swoole-src/modules/swoole.so ]; then
+  cp swoole-src/modules/swoole.so build/output/
   echo "Swoole shared library built successfully at build/output/swoole.so"
 else
-  echo "Error: Build failed. modules/swoole.so not found."
+  echo "Error: Build failed. swoole-src/modules/swoole.so not found."
   exit 1
 fi
