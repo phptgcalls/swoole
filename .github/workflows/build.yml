@@ -1,58 +1,138 @@
-name: Build and Release Swoole Shared Library
+name: Build And Publish
 
 on:
-  push:
-    tags:
-      - 'v*'  # Trigger on tags starting with "v"
+  workflow_dispatch:
+    inputs:
+      build-shared-libs:
+        description: 'Build shared libraries'
+        required: false
+        default: true
+        type: boolean
+      build-static-libs:
+        description: 'Build static libraries'
+        required: false
+        default: true
+        type: boolean
+      build-wheels:
+        description: 'Build wheels'
+        required: false
+        default: false
+        type: boolean
+      linux-build:
+        description: 'Build for Linux'
+        required: false
+        default: true
+        type: boolean
+      linux-arm64-build:
+        description: 'Build for Linux ARM64'
+        required: false
+        default: true
+        type: boolean
+      macos-build:
+        description: 'Build for macOS'
+        required: false
+        default: false
+        type: boolean
+      windows-build:
+        description: 'Build for Windows'
+        required: false
+        default: false
+        type: boolean
+      android-build:
+        description: 'Build for Android'
+        required: false
+        default: false
+        type: boolean
+      publish:
+        description: 'Publish the library'
+        required: false
+        default: true
+        type: boolean
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Set matrix
+        id: set-matrix
+        run: |
+          build_list=""
+          if [[ "${{ github.event.inputs.linux-build }}" == "true" ]]; then
+            build_list+=",{\"os\":\"ubuntu-latest\",\"shared_name\":\"linux-x86_64\"}"
+          fi
+          if [[ "${{ github.event.inputs.linux-arm64-build }}" == "true" ]]; then
+            build_list+=",{\"os\":\"arm64-server\",\"shared_name\":\"linux-arm64\"}"
+          fi
+          if [[ "${{ github.event.inputs.macos-build }}" == "true" ]]; then
+            build_list+=",{\"os\":\"macos-15\",\"shared_name\":\"macos-arm64\"}"
+          fi
+          if [[ "${{ github.event.inputs.windows-build }}" == "true" ]]; then
+            build_list+=",{\"os\":\"windows-2022\",\"shared_name\":\"windows-x86_64\"}"
+          fi
+          # Add more platforms as needed, e.g. Android, with its proper configuration.
+          if [[ -n "$build_list" ]]; then
+            build_list="${build_list:1}"
+          fi
+          matrix=$(echo "{\"include\":[$build_list]}")
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
   build:
-    name: Build on ${{ matrix.os }}
+    if: github.event.inputs.build-wheels == 'true' || github.event.inputs.build-shared-libs == 'true' || github.event.inputs.build-static-libs == 'true'
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up build environment
+      - name: Set up environment
         run: |
-          echo "Starting build on ${{ matrix.os }}..."
-          # You can install dependencies here if needed
+          echo "Running on ${{ matrix.os }} with shared target name: ${{ matrix.shared_name }}"
 
-      - name: Build Swoole shared library
+      # Build shared libraries if enabled
+      - name: Build shared libraries
+        if: ${{ github.event.inputs.build-shared-libs == 'true' }}
         run: |
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            echo "Building for Linux..."
-            chmod +x ./build-linux.sh
-            ./build-linux.sh
-          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
-            echo "Building for macOS..."
-            chmod +x ./build-macos.sh
-            ./build-macos.sh
-          else
-            echo "Building for Windows..."
-            powershell.exe -File build-windows.ps1
-          fi
+          echo "Building shared libraries for ${{ matrix.shared_name }}..."
+          chmod +x ./scripts/build-shared.sh
+          ./scripts/build-shared.sh "${{ matrix.shared_name }}"
+      
+      # Build static libraries if enabled
+      - name: Build static libraries
+        if: ${{ github.event.inputs.build-static-libs == 'true' }}
+        run: |
+          echo "Building static libraries for ${{ matrix.shared_name }}..."
+          chmod +x ./scripts/build-static.sh
+          ./scripts/build-static.sh "${{ matrix.shared_name }}"
 
+      # Build wheels if enabled
+      - name: Build wheels
+        if: ${{ github.event.inputs.build-wheels == 'true' }}
+        run: |
+          echo "Building wheels for ${{ matrix.shared_name }}..."
+          chmod +x ./scripts/build-wheels.sh
+          ./scripts/build-wheels.sh "${{ matrix.shared_name }}"
+
+      # (Optional) Verify Swoole using docker on Linux
       - name: Verify Swoole Installation (Linux only)
-        if: matrix.os == 'ubuntu-latest'
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: docker run --rm phpswoole/swoole "php --ri swoole"
 
-      - name: Upload build artifact
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: swoole-${{ matrix.os }}
+          name: build-${{ matrix.shared_name }}
           path: build/output/
 
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
+  publish:
+    if: github.event.inputs.publish == 'true' && startsWith(github.ref, 'refs/tags/')
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
     steps:
-      - name: Download build artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
           path: build_artifacts
@@ -63,7 +143,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           name: Release ${{ github.ref }}
-          body: Automated release of Swoole shared library version ${{ github.ref }}.
+          body: "Automated release of Swoole shared library version ${{ github.ref }}."
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
