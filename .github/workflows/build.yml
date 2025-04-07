@@ -99,6 +99,14 @@ jobs:
         run: |
           echo "Running on ${{ matrix.os }} with shared target name: ${{ matrix.shared_name }}"
 
+      - name: Install and configure PCRE2 on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install pcre2
+          ln -s /opt/homebrew/opt/pcre2/include/pcre2.h $(brew --prefix php)/include/php/ext/pcre/pcre2.h
+        env:
+          CFLAGS: "-I/opt/homebrew/include"
+
       - name: Build shared libraries
         if: ${{ github.event.inputs.build-shared-libs == 'true' }}
         run: |
