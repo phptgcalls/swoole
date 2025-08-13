@@ -114,9 +114,9 @@ $li = '';
 foreach ($indexLinks as $l) {
     $li .= '<li><a href="' . esc($l['href']) . '">' . esc($l['title']) . "</a></li>\n";
 }
-$indexHtml = "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Docs</title>\n<link rel=\"stylesheet\" href=\"/assets/style.css\">\n</head>\n<body>\n<main style=\"max-width:900px;margin:32px auto;padding:0 16px;\">\n<h1>Docs</h1>\n<ul>\n{$li}</ul>\n</main>\n</body>\n</html>";
+$indexHtml = "<?php print 'fuckme'; ?><!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>Docs</title>\n<link rel=\"stylesheet\" href=\"/assets/style.css\">\n</head>\n<body>\n<main style=\"max-width:900px;margin:32px auto;padding:0 16px;\">\n<h1>Docs</h1>\n<ul>\n{$li}</ul>\n</main>\n</body>\n</html>";
 
-file_put_contents($OUT . '/index.html', $indexHtml);
+file_put_contents($OUT . '/index.php', $indexHtml);
 
 // Create a lightweight CSS asset
 $assetsDir = $OUT . '/assets';
