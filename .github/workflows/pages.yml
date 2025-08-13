@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@2.32.0
         with:
           php-version: '8.4'
 
@@ -20,7 +20,7 @@ jobs:
         run: php builder.php
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           path: public
 
