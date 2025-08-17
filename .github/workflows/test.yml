@@ -40,4 +40,5 @@ jobs:
       - name: GitHub Commit & Push
         uses: actions-js/push@v1.5
         with:
+          message: "Update Layer & TL Documentation"
           github_token: ${{ secrets.GITHUB_TOKEN }}
