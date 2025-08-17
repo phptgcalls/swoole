@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types = 1);
+
+namespace Tak\Liveproto\Tl\Types\Other;
+
+use Tak\Liveproto\Utils\Binary;
+
+use Tak\Liveproto\Utils\Instance;
+
+/**
+ * @param int folder_id
+ * @return DialogPeer
+ */
+
+final class DialogPeerFolder extends Instance {
+	public function request(int $folder_id) : Binary {
+		$writer = new Binary(true);
+		$writer->writeInt(0x514519e2);
+		$writer->writeInt($folder_id);
+		return $writer;
+	}
+	public function response(Binary $reader) : object {
+		$result = array();
+		$result['folder_id'] = $reader->readInt();
+		return new self($result);
+	}
+}
+
+?>
