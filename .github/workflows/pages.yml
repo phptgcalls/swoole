@@ -1,8 +1,14 @@
 name: Build and Deploy Pages
 
 on:
-  push:
-    branches: [ main ]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to use ( example : v1.2.3 ) If empty, workflow will try to detect tag from event'
+        required: false
+        default: ''
 
 permissions:
   contents: read
