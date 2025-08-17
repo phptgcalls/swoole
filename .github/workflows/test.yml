@@ -34,8 +34,8 @@ jobs:
 
       - name: Remove vendor
         run: |
-          rm -rf vendor
-          rm -f composer.lock
+          rm -rf docs/vendor
+          rm -f docs/composer.lock
 
       - name: GitHub Commit & Push
         uses: actions-js/push@v1.5
