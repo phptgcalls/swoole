@@ -1,0 +1,43 @@
+name: Build PHAR and upload to release
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      PHP_VERSION: '8.3'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@2.32.0
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, gmp
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --working-dir=docs
+
+      - name: Run render
+        run: php docs/render.php
+
+      - name: Remove vendor
+        run: |
+          rm -rf vendor
+          rm -f composer.lock
+
+      - name: GitHub Commit & Push
+        uses: actions-js/push@v1.5
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
