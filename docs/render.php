@@ -4,12 +4,14 @@ declare(strict_types = 1);
 
 require __DIR__.DIRECTORY_SEPARATOR.'vendor'.DIRECTORY_SEPARATOR.'autoload.php';
 
-use Tak\Liveproto\Tl\DocBuilder;
+use Tak\Liveproto\Utils\Helper;
 
-putenv('DOCPATH='.__DIR__);
+var_dump(Helper::generateRandomLong());
 
-$_ENV['DOCPATH'] = __DIR__;
+$file = __DIR__.'/people.txt';
 
-DocBuilder::start();
+$current = "John Smith\n";
+
+file_put_contents($file, $current);
 
 ?>
